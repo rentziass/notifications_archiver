@@ -1,5 +1,13 @@
 import * as core from '@actions/core'
-import { wait } from './wait.js'
+
+import { createActionAuth } from "@octokit/auth-action";
+import { Octokit } from "@octokit/core";
+
+// {
+//   type: 'token',
+//   token: 'v1.1234567890abcdef1234567890abcdef12345678',
+//   tokenType: 'oauth'
+// }
 
 /**
  * The main function for the action.
@@ -8,18 +16,20 @@ import { wait } from './wait.js'
  */
 export async function run(): Promise<void> {
   try {
-    const ms: string = core.getInput('milliseconds')
+    const auth = createActionAuth();
+    const authentication = await auth();
+    const octokit = new Octokit({ authentication });
 
-    // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-    core.debug(`Waiting ${ms} milliseconds ...`)
+    const response = await octokit.request("GET /notifications", {});
+    core.info(`response: ${JSON.stringify(response)}`);
 
-    // Log the current timestamp, wait, then log the new timestamp
-    core.debug(new Date().toTimeString())
-    await wait(parseInt(ms, 10))
-    core.debug(new Date().toTimeString())
-
-    // Set outputs for other workflow steps to use
-    core.setOutput('time', new Date().toTimeString())
+    // // Log the current timestamp, wait, then log the new timestamp
+    // core.debug(new Date().toTimeString())
+    // await wait(parseInt(ms, 10))
+    // core.debug(new Date().toTimeString())
+    //
+    // // Set outputs for other workflow steps to use
+    // core.setOutput('time', new Date().toTimeString())
   } catch (error) {
     // Fail the workflow run if an error occurs
     if (error instanceof Error) core.setFailed(error.message)
