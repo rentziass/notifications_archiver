@@ -27469,10 +27469,10 @@ var Hook = { Collection };
 // pkg/dist-src/defaults.js
 
 // pkg/dist-src/version.js
-var VERSION$3 = "0.0.0-development";
+var VERSION$4 = "0.0.0-development";
 
 // pkg/dist-src/defaults.js
-var userAgent = `octokit-endpoint.js/${VERSION$3} ${getUserAgent()}`;
+var userAgent = `octokit-endpoint.js/${VERSION$4} ${getUserAgent()}`;
 var DEFAULTS = {
   method: "GET",
   baseUrl: "https://api.github.com",
@@ -28030,12 +28030,12 @@ class RequestError extends Error {
 // pkg/dist-src/index.js
 
 // pkg/dist-src/version.js
-var VERSION$2 = "0.0.0-development";
+var VERSION$3 = "0.0.0-development";
 
 // pkg/dist-src/defaults.js
 var defaults_default = {
   headers: {
-    "user-agent": `octokit-request.js/${VERSION$2} ${getUserAgent()}`
+    "user-agent": `octokit-request.js/${VERSION$3} ${getUserAgent()}`
   }
 };
 
@@ -28214,7 +28214,7 @@ var request = withDefaults$1(endpoint, defaults_default);
 // pkg/dist-src/index.js
 
 // pkg/dist-src/version.js
-var VERSION$1 = "0.0.0-development";
+var VERSION$2 = "0.0.0-development";
 
 // pkg/dist-src/error.js
 function _buildMessageForResponseErrors(data) {
@@ -28316,7 +28316,7 @@ function withDefaults(request2, newDefaults) {
 // pkg/dist-src/index.js
 withDefaults(request, {
   headers: {
-    "user-agent": `octokit-graphql.js/${VERSION$1} ${getUserAgent()}`
+    "user-agent": `octokit-graphql.js/${VERSION$2} ${getUserAgent()}`
   },
   method: "POST",
   url: "/graphql"
@@ -28328,15 +28328,15 @@ function withCustomRequest(customRequest) {
   });
 }
 
-const VERSION = "6.1.4";
+const VERSION$1 = "6.1.4";
 
 const noop = () => {
 };
 const consoleWarn = console.warn.bind(console);
 const consoleError = console.error.bind(console);
-const userAgentTrail = `octokit-core.js/${VERSION} ${getUserAgent()}`;
+const userAgentTrail = `octokit-core.js/${VERSION$1} ${getUserAgent()}`;
 class Octokit {
-  static VERSION = VERSION;
+  static VERSION = VERSION$1;
   static defaults(defaults) {
     const OctokitWithDefaults = class extends this {
       constructor(...args) {
@@ -28456,11 +28456,119 @@ class Octokit {
   auth;
 }
 
-// {
-//   type: 'token',
-//   token: 'v1.1234567890abcdef1234567890abcdef12345678',
-//   tokenType: 'oauth'
-// }
+// pkg/dist-src/version.js
+var VERSION = "0.0.0-development";
+
+// pkg/dist-src/normalize-paginated-list-response.js
+function normalizePaginatedListResponse(response) {
+  if (!response.data) {
+    return {
+      ...response,
+      data: []
+    };
+  }
+  const responseNeedsNormalization = "total_count" in response.data && !("url" in response.data);
+  if (!responseNeedsNormalization) return response;
+  const incompleteResults = response.data.incomplete_results;
+  const repositorySelection = response.data.repository_selection;
+  const totalCount = response.data.total_count;
+  delete response.data.incomplete_results;
+  delete response.data.repository_selection;
+  delete response.data.total_count;
+  const namespaceKey = Object.keys(response.data)[0];
+  const data = response.data[namespaceKey];
+  response.data = data;
+  if (typeof incompleteResults !== "undefined") {
+    response.data.incomplete_results = incompleteResults;
+  }
+  if (typeof repositorySelection !== "undefined") {
+    response.data.repository_selection = repositorySelection;
+  }
+  response.data.total_count = totalCount;
+  return response;
+}
+
+// pkg/dist-src/iterator.js
+function iterator(octokit, route, parameters) {
+  const options = typeof route === "function" ? route.endpoint(parameters) : octokit.request.endpoint(route, parameters);
+  const requestMethod = typeof route === "function" ? route : octokit.request;
+  const method = options.method;
+  const headers = options.headers;
+  let url = options.url;
+  return {
+    [Symbol.asyncIterator]: () => ({
+      async next() {
+        if (!url) return { done: true };
+        try {
+          const response = await requestMethod({ method, url, headers });
+          const normalizedResponse = normalizePaginatedListResponse(response);
+          url = ((normalizedResponse.headers.link || "").match(
+            /<([^<>]+)>;\s*rel="next"/
+          ) || [])[1];
+          return { value: normalizedResponse };
+        } catch (error) {
+          if (error.status !== 409) throw error;
+          url = "";
+          return {
+            value: {
+              status: 200,
+              headers: {},
+              data: []
+            }
+          };
+        }
+      }
+    })
+  };
+}
+
+// pkg/dist-src/paginate.js
+function paginate(octokit, route, parameters, mapFn) {
+  if (typeof parameters === "function") {
+    mapFn = parameters;
+    parameters = void 0;
+  }
+  return gather(
+    octokit,
+    [],
+    iterator(octokit, route, parameters)[Symbol.asyncIterator](),
+    mapFn
+  );
+}
+function gather(octokit, results, iterator2, mapFn) {
+  return iterator2.next().then((result) => {
+    if (result.done) {
+      return results;
+    }
+    let earlyExit = false;
+    function done() {
+      earlyExit = true;
+    }
+    results = results.concat(
+      mapFn ? mapFn(result.value, done) : result.value.data
+    );
+    if (earlyExit) {
+      return results;
+    }
+    return gather(octokit, results, iterator2, mapFn);
+  });
+}
+
+// pkg/dist-src/compose-paginate.js
+Object.assign(paginate, {
+  iterator
+});
+
+// pkg/dist-src/index.js
+function paginateRest(octokit) {
+  return {
+    paginate: Object.assign(paginate.bind(null, octokit), {
+      iterator: iterator.bind(null, octokit)
+    })
+  };
+}
+paginateRest.VERSION = VERSION;
+
 /**
  * The main function for the action.
  *
@@ -28470,17 +28578,27 @@ async function run() {
     try {
         const auth = createActionAuth();
         const authentication = await auth();
-        const octokit = new Octokit({ authentication });
-        const response = await octokit.request('GET /notifications', {});
-        console.log(response.data);
-        coreExports.info(`response: ${JSON.stringify(response)}`);
-        // // Log the current timestamp, wait, then log the new timestamp
-        // core.debug(new Date().toTimeString())
-        // await wait(parseInt(ms, 10))
-        // core.debug(new Date().toTimeString())
-        //
-        // // Set outputs for other workflow steps to use
-        // core.setOutput('time', new Date().toTimeString())
+        const PaginatedOctokit = Octokit.plugin(paginateRest);
+        const octokit = new PaginatedOctokit({ auth: authentication.token });
+        const notifications = await octokit.paginate('GET /notifications', {});
+        console.log(notifications);
+        // loop through notifications and check the status of the subject
+        // if the subject is either an issue or a pull request. If the status is closed,
+        // mark the notification as done
+        for (const notification of notifications) {
+            console.log(notification);
+            if (notification.subject.type === 'Issue' ||
+                notification.subject.type === 'PullRequest') {
+                const response = await octokit.request(`GET ${notification.subject.url}`);
+                const subject = response.data;
+                if (subject.state === 'closed') {
+                    await octokit.request(`DELETE /notifications/threads/${notification.id}`, {
+                        thread_id: notification.id
+                    });
+                    coreExports.notice(`Marked notification as done: [${subject.title}](${subject.html_url})`);
+                }
+            }
+        }
     }
     catch (error) {
         // Fail the workflow run if an error occurs

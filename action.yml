@@ -1,23 +1,19 @@
-name: The name of your action here
-description: Provide a description here
-author: Your name or organization here
+name: Notifications Archiver
+description:
+  Automatically marks all notifications for closed issues and pull requests as
+  done
+author: rentziass
 
 # Add your action's branding here. This will appear on the GitHub Marketplace.
 branding:
-  icon: heart
-  color: red
+  icon: archive
+  color: purple
 
 # Define your inputs here.
-inputs:
-  milliseconds:
-    description: Your input description here
-    required: true
-    default: '1000'
+inputs: {}
 
 # Define your outputs here.
-outputs:
-  time:
-    description: Your output description here
+outputs: {}
 
 runs:
   using: node20
