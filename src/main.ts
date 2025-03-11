@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 
-import { createActionAuth } from "@octokit/auth-action";
-import { Octokit } from "@octokit/core";
+import { createActionAuth } from '@octokit/auth-action'
+import { Octokit } from '@octokit/core'
 
 // {
 //   type: 'token',
@@ -16,13 +16,13 @@ import { Octokit } from "@octokit/core";
  */
 export async function run(): Promise<void> {
   try {
-    const auth = createActionAuth();
-    const authentication = await auth();
-    const octokit = new Octokit({ authentication });
+    const auth = createActionAuth()
+    const authentication = await auth()
+    const octokit = new Octokit({ authentication })
 
-    const response = await octokit.request("GET /notifications", {});
-    console.log(response.data);
-    core.info(`response: ${JSON.stringify(response)}`);
+    const response = await octokit.request('GET /notifications', {})
+    console.log(response.data)
+    core.info(`response: ${JSON.stringify(response)}`)
 
     // // Log the current timestamp, wait, then log the new timestamp
     // core.debug(new Date().toTimeString())
