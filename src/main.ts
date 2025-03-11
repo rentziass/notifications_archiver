@@ -21,6 +21,7 @@ export async function run(): Promise<void> {
     const octokit = new Octokit({ authentication });
 
     const response = await octokit.request("GET /notifications", {});
+    console.log(response.data);
     core.info(`response: ${JSON.stringify(response)}`);
 
     // // Log the current timestamp, wait, then log the new timestamp
