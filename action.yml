@@ -1,6 +1,6 @@
 name: Notifications Archiver
 description:
-  Automatically marks all notifications for closed issues and pull requests as
+  Automatically marks all GitHub notifications for closed issues and pull requests as
   done
 author: rentziass
 
