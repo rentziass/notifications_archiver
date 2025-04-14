@@ -38,8 +38,8 @@
   "license": "MIT",
   "dependencies": {
     "@actions/core": "^1.11.1",
-    "@octokit/auth-action": "^5.1.1",
-    "@octokit/core": "^6.1.4",
+    "@octokit/auth-action": "^5.1.2",
+    "@octokit/core": "^6.1.5",
     "@octokit/plugin-paginate-rest": "^11.4.3"
   },
   "devDependencies": {
