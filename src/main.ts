@@ -23,7 +23,7 @@ export async function run(): Promise<void> {
     // if the subject is either an issue or a pull request. If the status is closed,
     // mark the notification as done
     for (const notification of notifications) {
-      console.log(notification)
+      core.debug(`Processing notification: ${notification}`)
       if (
         notification.subject.type === 'Issue' ||
         notification.subject.type === 'PullRequest'
